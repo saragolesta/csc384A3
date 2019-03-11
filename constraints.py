@@ -297,7 +297,7 @@ class NValuesConstraint(Constraint):
                to see if they can satisfy the all diff'''
             required_count = 0
             for (var, val) in l:
-                if val == self._required:
+                if val in self._required:
                     required_count += 1
 
             return self._lb <= required_count <= self._ub
@@ -307,7 +307,7 @@ class NValuesConstraint(Constraint):
                to see if they can satisfy the all diff'''
             required_count = 0
             for (var, val) in l:
-                if val == self._required:
+                if val in self._required:
                     required_count += 1
 
             return required_count <= self._ub
