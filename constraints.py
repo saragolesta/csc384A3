@@ -292,28 +292,45 @@ class NValuesConstraint(Constraint):
         '''
         if var not in self.scope():
             return True   #var=val has support on any constraint it does not participate in
-        def finalTestfn(l):
-            '''tests a list of assignments which are pairs (var,val)
-               to see if they can satisfy the all diff'''
-            required_count = 0
-            for (var, val) in l:
-                if val in self._required:
-                    required_count += 1
+        # def finalTestfn(l):
+        #     '''tests a list of assignments which are pairs (var,val)
+        #        to see if they can satisfy the all diff'''
+        #     required_count = 0
+        #     for (var, val) in l:
+        #         if val in self._required:
+        #             required_count += 1
+        #
+        #     return self._lb <= required_count <= self._ub
+        #
+        # def partialTestfn(l):
+        #     '''tests a list of assignments which are pairs (var,val)
+        #        to see if they can satisfy the all diff'''
+        #     required_count = 0
+        #     for (var, val) in l:
+        #         if val in self._required:
+        #             required_count += 1
+        #
+        #     return required_count <= self._ub
+        #
+        # varsToAssign = self.scope()
+        # varsToAssign.remove(var)
+        # x = findvals(varsToAssign, [(var, val)], finalTestfn, partialTestfn)
+        # return x
+        count_assigned_to_req = 0
+        count_possible_assignment_of_req = 0
+        for v in self.scope():
+            if (v.isAssigned() and v.getValue in self._required):
+                count_assigned_to_req += 1
+        count_assigned_to_req += (val in self._required)
 
-            return self._lb <= required_count <= self._ub
+        for v in self.unAssignedVars():
+            if(v is not var):
+                if (any(v.inCurDomain(r) for r in self._required)):
+                    count_possible_assignment_of_req += 1
 
-        def partialTestfn(l):
-            '''tests a list of assignments which are pairs (var,val)
-               to see if they can satisfy the all diff'''
-            required_count = 0
-            for (var, val) in l:
-                if val in self._required:
-                    required_count += 1
+        for n in range (count_possible_assignment_of_req+1):
+            if (self._lb <= (count_assigned_to_req + n) <= self._ub):
+                return True
+        return False
 
-            return required_count <= self._ub
-
-        varsToAssign = self.scope()
-        varsToAssign.remove(var)
-        x = findvals(varsToAssign, [(var, val)], finalTestfn, partialTestfn)
-        return x
 
