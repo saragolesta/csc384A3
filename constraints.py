@@ -120,7 +120,10 @@ class QueensTableConstraint(TableConstraint):
     #the existing function signatures.
     def __init__(self, name, qi, qj, i, j):
         self._name = "Queen_" + name
-        util.raiseNotDefined()
+        scope = [qi, qj]
+        satAssignments = [[vali, valj] for valj in qj.domain() for vali in qi.domain()
+                if vali != valj and abs(vali - valj) != abs(i - j)]
+        TableConstraint.__init__(self, name, scope, satAssignments)
 
 
 class NeqConstraint(Constraint):
