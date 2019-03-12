@@ -276,7 +276,7 @@ class NValuesConstraint(Constraint):
         numVar = 0
         for v in self.scope():
             if v.isAssigned():
-                if v.getValue() == self._required:
+                if v.getValue() in self._required:
                     numVar +=1
             else:
                 return True
@@ -319,8 +319,9 @@ class NValuesConstraint(Constraint):
         count_assigned_to_req = 0
         count_possible_assignment_of_req = 0
         for v in self.scope():
-            if (v.isAssigned() and v.getValue in self._required):
+            if ((v is not var) and v.isAssigned() and v.getValue() in self._required):
                 count_assigned_to_req += 1
+
         count_assigned_to_req += (val in self._required)
 
         for v in self.unAssignedVars():
@@ -331,6 +332,7 @@ class NValuesConstraint(Constraint):
         for n in range (count_possible_assignment_of_req+1):
             if (self._lb <= (count_assigned_to_req + n) <= self._ub):
                 return True
+
         return False
 
 

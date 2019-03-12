@@ -158,12 +158,12 @@ def schedules(schedule_problem):
     t_dom = defaultdict(list)
     course_classes_dict = defaultdict(list)
     for class_info in schedule_problem.classes:
-    	info = class_info.split('-')
-    	time_slot = int(info[2])
-    	# Domain for each possible timeslot
-    	t_dom[time_slot].append(class_info)
-    	# A dictionary of course-class mappings
-    	course_classes_dict[info[0]].append(class_info)
+        info = class_info.split('-')
+        time_slot = int(info[2])
+        # Domain for each possible timeslot
+        t_dom[time_slot].append(class_info)
+        # A dictionary of course-class mappings
+        course_classes_dict[info[0]].append(class_info)
 
     vars = []
     for t in range(1,schedule_problem.num_time_slots + 1):
@@ -175,10 +175,12 @@ def schedules(schedule_problem):
     for course in schedule_problem.courses:
         lectures = [c for c in course_classes_dict[course] if c.split('-')[3] == LEC]
         tuts = [c for c in course_classes_dict[course] if c.split('-')[3] == TUT]
-        one_lec_cnstr = NValuesConstraint('One_lecture', vars, course_classes_dict[course], 1, 1)
+        print(lectures)
+        print(tuts)
+        one_lec_cnstr = NValuesConstraint('One_lecture', vars, lectures, 1, 1)
         one_tut_cnstr = NValuesConstraint('One_tutorial', vars, tuts, 1, 1)
         cnstrs.append(one_lec_cnstr)
-        # cnstrs.append(one_tut_cnstr)
+        cnstrs.append(one_tut_cnstr)
 
 
     print(vars,cnstrs)
@@ -240,10 +242,7 @@ def solve_schedules(schedule_problem, algo, allsolns,
             soln.append(val)
         solns.append(soln)
 
-    if (len(solns) == 1):
-    	return soln
-    else:
-    	return solns
+    return solns
 
 
     #Convert each solution into a list of lists specifying a schedule
