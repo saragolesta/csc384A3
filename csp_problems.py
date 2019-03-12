@@ -2,6 +2,7 @@ from csp import Constraint, Variable, CSP
 from constraints import *
 from backtracking import bt_search
 import util
+from collections import defaultdict
 
 
 ##################################################################
@@ -150,6 +151,41 @@ class ScheduleProblem:
         '''Return list of buildings that are connected from specified building'''
         return self._connected_buildings[building]
 
+def schedules(schedule_problem):
+    '''Return an n-queens CSP, optionally use tableContraints'''
+    #your implementation for Question 4 changes this function
+    #implement handling of model == 'alldiff'
+    t_dom = defaultdict(list)
+    course_classes_dict = defaultdict(list)
+    for class_info in schedule_problem.classes:
+    	info = class_info.split('-')
+    	time_slot = int(info[2])
+    	# Domain for each possible timeslot
+    	t_dom[time_slot].append(class_info)
+    	# A dictionary of course-class mappings
+    	course_classes_dict[info[0]].append(class_info)
+
+    vars = []
+    for t in range(1,schedule_problem.num_time_slots + 1):
+        t_dom[t].append(NOCLASS)
+        vars.append(Variable('T_{}'.format(t), t_dom[t]))
+
+    cnstrs = []
+
+    for course in schedule_problem.courses:
+        lectures = [c for c in course_classes_dict[course] if c.split('-')[3] == LEC]
+        tuts = [c for c in course_classes_dict[course] if c.split('-')[3] == TUT]
+        one_lec_cnstr = NValuesConstraint('One_lecture', vars, course_classes_dict[course], 1, 1)
+        one_tut_cnstr = NValuesConstraint('One_tutorial', vars, tuts, 1, 1)
+        cnstrs.append(one_lec_cnstr)
+        # cnstrs.append(one_tut_cnstr)
+
+
+    print(vars,cnstrs)
+    for var in vars:
+        print("{} = {}, ".format(var.name(),var.curDomain()), end='')
+    csp = CSP("{}-Schedule".format(schedule_problem.num_time_slots), vars, cnstrs)
+    return csp
 
 def solve_schedules(schedule_problem, algo, allsolns,
                  variableHeuristic='mrv', silent=False, trace=False):
@@ -189,10 +225,26 @@ def solve_schedules(schedule_problem, algo, allsolns,
     '''
 
     #BUILD your CSP here and store it in the varable csp
-    util.raiseNotDefined()
-
+    # util.raiseNotDefined()
+    csp = schedules(schedule_problem)
     #invoke search with the passed parameters
     solutions, num_nodes = bt_search(algo, csp, variableHeuristic, allsolns, trace)
+    print(solutions,num_nodes)
+
+    solns = []
+
+    for s in solutions:
+        s = sorted(s, key=lambda x: x[0].name())
+        soln = []
+        for (var,val) in s:
+            soln.append(val)
+        solns.append(soln)
+
+    if (len(solns) == 1):
+    	return soln
+    else:
+    	return solns
+
 
     #Convert each solution into a list of lists specifying a schedule
     #for each student in the format described above.
