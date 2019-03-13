@@ -151,18 +151,16 @@ class ScheduleProblem:
         '''Return list of buildings that are connected from specified building'''
         return self._connected_buildings[building]
 
-def lectureTutSatAssignments(scope):
+def lecture_tut_sat_assignments(scope):
     var_i = scope[0]
     var_j = scope[1]
     sat_assignments = []
     for val_i in var_i.domain():
 
         info_i = val_i.split('-')
-
         for val_j in var_j.domain():
 
             info_j = val_j.split('-')
-
             if (info_i[0] == info_j[0] != NOCLASS):
                 if (info_i[3] == TUT) and (int(info_i[2]) < int(info_j[2])):
                     continue
@@ -170,6 +168,20 @@ def lectureTutSatAssignments(scope):
 
     return sat_assignments
 
+def building_sat_assignments(scope, connected_buildings_fn):
+    var_i = scope[0]
+    var_j = scope[1]
+    sat_assignments = []
+    for val_i in var_i.domain():
+
+        info_i = val_i.split('-')
+        for val_j in var_j.domain():
+
+            info_j = val_j.split('-')
+            if (info_i[0] == NOCLASS or info_j[0] == NOCLASS or (info_i[1] in connected_buildings_fn(info_j[1]))):
+                sat_assignments.append([val_i, val_j])
+
+    return sat_assignments
 
 def schedules(schedule_problem):
     '''Return an n-queens CSP, optionally use tableContraints'''
@@ -177,7 +189,9 @@ def schedules(schedule_problem):
     #implement handling of model == 'alldiff'
     t_dom = defaultdict(list)
     course_classes_dict = defaultdict(list)
+
     for class_info in schedule_problem.classes:
+
         info = class_info.split('-')
         time_slot = int(info[2])
         # Domain for each possible timeslot
@@ -187,33 +201,46 @@ def schedules(schedule_problem):
 
     vars = []
     for t in range(1,schedule_problem.num_time_slots + 1):
+
         t_dom[t].append(NOCLASS)
         vars.append(Variable('T_{}'.format(t), t_dom[t]))
 
     cnstrs = []
 
     for course in schedule_problem.courses:
+
         lectures = [c for c in course_classes_dict[course] if c.split('-')[3] == LEC]
         tuts = [c for c in course_classes_dict[course] if c.split('-')[3] == TUT]
-        print(lectures)
-        print(tuts)
         one_lec_cnstr = NValuesConstraint('One_lecture', vars, lectures, 1, 1)
         one_tut_cnstr = NValuesConstraint('One_tutorial', vars, tuts, 1, 1)
         cnstrs.append(one_lec_cnstr)
         cnstrs.append(one_tut_cnstr)
 
     for ti in range(schedule_problem.num_time_slots):
+
         for tj in range(ti + 1, schedule_problem.num_time_slots):
+
             scope = [vars[ti], vars[tj]]
-            sat_assignments = lectureTutSatAssignments(scope)
-            print(sat_assignments,ti+1,tj+1)
+            sat_assignments = lecture_tut_sat_assignments(scope)
             tut_after_lec_cnstr = TableConstraint("C(T{},T{})".format(ti+1,tj+1), scope, sat_assignments)
             cnstrs.append(tut_after_lec_cnstr)
 
+    for ti in range(schedule_problem.num_time_slots - 1):
 
-    print(vars,cnstrs)
-    for var in vars:
-        print("{} = {}, ".format(var.name(),var.curDomain()), end='')
+        scope = [vars[ti], vars[ti + 1]]
+        sat_assignments = building_sat_assignments(scope, schedule_problem.connected_buildings)
+        close_buildings_cnstr = TableConstraint("C(B{})".format(ti+1), scope, sat_assignments)
+        cnstrs.append(close_buildings_cnstr)
+
+    min_rest = schedule_problem.min_rest_frequency
+
+    for ti in range(schedule_problem.num_time_slots - (min_rest -1)):
+
+        scope = vars[ti:ti + min_rest]
+        rest_cnstr = NValuesConstraint("Min_rest{}".format(min_rest),
+                                       scope, [NOCLASS], 1, min_rest)
+        cnstrs.append(rest_cnstr)
+
     csp = CSP("{}-Schedule".format(schedule_problem.num_time_slots), vars, cnstrs)
     return csp
 
