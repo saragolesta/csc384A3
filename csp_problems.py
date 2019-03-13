@@ -151,6 +151,26 @@ class ScheduleProblem:
         '''Return list of buildings that are connected from specified building'''
         return self._connected_buildings[building]
 
+def lectureTutSatAssignments(scope):
+    var_i = scope[0]
+    var_j = scope[1]
+    sat_assignments = []
+    for val_i in var_i.domain():
+
+        info_i = val_i.split('-')
+
+        for val_j in var_j.domain():
+
+            info_j = val_j.split('-')
+
+            if (info_i[0] == info_j[0] != NOCLASS):
+                if (info_i[3] == TUT) and (int(info_i[2]) < int(info_j[2])):
+                    continue
+            sat_assignments.append([val_i, val_j])
+
+    return sat_assignments
+
+
 def schedules(schedule_problem):
     '''Return an n-queens CSP, optionally use tableContraints'''
     #your implementation for Question 4 changes this function
@@ -181,6 +201,14 @@ def schedules(schedule_problem):
         one_tut_cnstr = NValuesConstraint('One_tutorial', vars, tuts, 1, 1)
         cnstrs.append(one_lec_cnstr)
         cnstrs.append(one_tut_cnstr)
+
+    for ti in range(schedule_problem.num_time_slots):
+        for tj in range(ti + 1, schedule_problem.num_time_slots):
+            scope = [vars[ti], vars[tj]]
+            sat_assignments = lectureTutSatAssignments(scope)
+            print(sat_assignments,ti+1,tj+1)
+            tut_after_lec_cnstr = TableConstraint("C(T{},T{})".format(ti+1,tj+1), scope, sat_assignments)
+            cnstrs.append(tut_after_lec_cnstr)
 
 
     print(vars,cnstrs)
@@ -231,17 +259,16 @@ def solve_schedules(schedule_problem, algo, allsolns,
     csp = schedules(schedule_problem)
     #invoke search with the passed parameters
     solutions, num_nodes = bt_search(algo, csp, variableHeuristic, allsolns, trace)
-    print(solutions,num_nodes)
 
     solns = []
 
     for s in solutions:
-        s = sorted(s, key=lambda x: x[0].name())
+        #s = sorted(s, key=lambda x: x[0].name())
         soln = []
         for (var,val) in s:
             soln.append(val)
         solns.append(soln)
-
+    print(solns)
     return solns
 
 
